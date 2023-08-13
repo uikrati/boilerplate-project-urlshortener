@@ -1,6 +1,6 @@
 const express = require('express');
 require('dotenv').config();
-const dns = require('dns');
+const dns = require('dns').promises; // Import the promises version of dns
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 
@@ -30,10 +30,9 @@ app.get('/', (req, res) => {
 
 app.post('/api/shorturl', async (req, res) => {
   const urlRequest = req.body.url;
-  const hostname = new URL(urlRequest).hostname;
-  
   try {
-    await dns.promises.lookup(hostname);
+    const url = new URL(urlRequest);
+    await dns.lookup(url.hostname); // Use hostname from URL object
   } catch (lookupErr) {
     res.json({ error: 'invalid url' });
     return;
