@@ -25,7 +25,7 @@ app.get('/', (req, res) => {
   res.sendFile(`${__dirname}/views/index.html`);
 });
 
-app.post('/api/shorturl', (req, res) => {
+app.post('/api/shorturl', async (req, res) => {
   const urlRequest = req.body.url;
   const hostname = urlRequest
     .replace(/http[s]?\:\/\//, '')
