@@ -8,15 +8,18 @@ const app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(`${__dirname}/public`));
 mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true
+  useNewUrlParser: true,
+  useUnifiedTopology: true
 });
 
 const urlSchema = new mongoose.Schema({
-  original_url: String,
+  original_url: {
+    type: String,
+    required: true
+  },
   short_url: {
     type: Number,
-    required: true,
-    default: 0
+    required: true
   }
 });
 const Url = mongoose.model('Url', urlSchema);
@@ -27,32 +30,32 @@ app.get('/', (req, res) => {
 
 app.post('/api/shorturl', async (req, res) => {
   const urlRequest = req.body.url;
-  const hostname = urlRequest
-    .replace(/http[s]?\:\/\//, '')
-    .replace(/\/(.+)?/, '');
-  dns.lookup(hostname, async (lookupErr, addresses) => {
-    if (!addresses) {
-      res.json({ error: 'invalid URL' });
-    } else {
-      try {
-        let urlFound = await Url.findOne({ original_url: urlRequest });
-        if (!urlFound) {
-          const count = await Url.estimatedDocumentCount();
-          urlFound = new Url({
-            original_url: urlRequest,
-            short_url: count + 1
-          });
-          await urlFound.save();
-        }
-        res.json({
-          original_url: urlFound.original_url,
-          short_url: urlFound.short_url
-        });
-      } catch (error) {
-        res.status(500).json({ error: 'server error' });
-      }
+  const hostname = new URL(urlRequest).hostname;
+  
+  try {
+    await dns.promises.lookup(hostname);
+  } catch (lookupErr) {
+    res.json({ error: 'invalid url' });
+    return;
+  }
+
+  try {
+    let urlFound = await Url.findOne({ original_url: urlRequest });
+    if (!urlFound) {
+      const count = await Url.countDocuments();
+      urlFound = new Url({
+        original_url: urlRequest,
+        short_url: count + 1
+      });
+      await urlFound.save();
     }
-  });
+    res.json({
+      original_url: urlFound.original_url,
+      short_url: urlFound.short_url
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'server error' });
+  }
 });
 
 app.get('/api/shorturl/:shorturl', async (req, res) => {
