@@ -42,11 +42,11 @@ const urlSchema = new Schema({
 });
 const URL = mongoose.model("URL", urlSchema);
 
+
 // Function to validate URLs
 function isValidURL(url) {
-  // Use a regex pattern to check for the valid URL format http://www.example.com
-  const urlPattern = /^http:\/\/www\.example\.com$/;
-  return urlPattern.test(url);
+  // Check if the URL is valid using the valid-url library
+  return validUrl.isWebUri(url);
 }
 
 // Your other route handlers and middleware can go here...
