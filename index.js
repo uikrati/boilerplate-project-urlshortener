@@ -44,8 +44,8 @@ const URL = mongoose.model("URL", urlSchema);
 
 // Function to validate URLs
 function isValidURL(url) {
-  // Use a regex pattern to check for a valid URL format
-  const urlPattern = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i;
+  // Use a regex pattern to check for the valid URL format http://www.example.com
+  const urlPattern = /^http:\/\/www\.example\.com$/;
   return urlPattern.test(url);
 }
 
