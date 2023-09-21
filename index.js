@@ -51,13 +51,22 @@ function isValidURL(url) {
 
 // Your other route handlers and middleware can go here...
 
-app.post('/api/shorturl', async function (req, res) {
-  const url = req.body.url;
+app.post('/api/shorturl', async function (req, res) {{
+  const originalURL = req.body.url;
 
-  // Check if the url is valid or not
-  if (!isValidURL(url)) {
-    return res.status(400).json({ error: 'Invalid URL' });
-  } else {
+  // Check if the URL starts with either http:// or https://
+  const httpRegex = /^(http|https)(:\/\/)/;
+  if (!httpRegex.test(originalURL)) {
+    return res.json({ error: 'Invalid URL' });
+  }
+  if (!isValidURL(originalURL)) {
+    return res.json({ error: 'Invalid URL' });
+  }
+  // Use the dns.lookup function to verify the URL
+  dns.lookup(originalURL, async (err, address) => {
+    if (err) {
+      return res.json({ error: 'DNS lookup failed' });
+    }})
     // Rest of your code for shortening URLs
     try {
       // Find the total count of documents in the database
