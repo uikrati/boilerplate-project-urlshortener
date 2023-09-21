@@ -43,10 +43,14 @@ const urlSchema = new Schema({
 const URL = mongoose.model("URL", urlSchema);
 
 
-// Function to validate URLs
 function isValidURL(url) {
   // Check if the URL is valid using the valid-url library
-  return validUrl.isWebUri(url);
+  if (validUrl.isUri(url)) {
+    // If it's a valid URL, further validate that it matches the expected format
+    const expectedFormat = /^http:\/\/www\.example\.com$/;
+    return expectedFormat.test(url);
+  }
+  return false;
 }
 
 // Your other route handlers and middleware can go here...
