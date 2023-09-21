@@ -5,18 +5,17 @@ const mongoose = require('mongoose');
 const shortId = require('shortid');
 const bodyParser = require('body-parser');
 const validUrl = require('valid-url');
-const dns = require('dns'); // Import the DNS module
 require('dotenv').config();
 const cors = require('cors');
 const app = express();
 
-// Basic Configuration
+// Basic Configuration 
 const port = process.env.PORT || 3000;
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
 app.use(express.json());
-const uri = process.env.MONGO_URI;
+const uri = process.env.MONGO_URI; 
 
 mongoose.connect(uri, {
   useNewUrlParser: true,
@@ -50,22 +49,16 @@ function isValidURL(url) {
   return urlRegex.test(url) || validUrl.isWebUri(url);
 }
 
-// Route for posting a URL
+// Your other route handlers and middleware can go here...
+
 app.post('/api/shorturl', async function (req, res) {
-  const originalURL = req.body.url;
+  const url = req.body.url;
 
-  // Check if the URL starts with either http:// or https://
-  const httpRegex = /^(http|https)(:\/\/)/;
-  if (!httpRegex.test(originalURL)) {
-    return res.json({ error: 'Invalid URL' });
-  }
-
-  // Use the dns.lookup function to verify the URL
-  dns.lookup(originalURL, async (err, address) => {
-    if (err) {
-      return res.json({ error: 'DNS lookup failed' });
-    }
-
+  // Check if the url is valid or not
+  if (!isValidURL(url)) {
+    return res.status(400).json({ error: 'Invalid URL' });
+  } else {
+    // Rest of your code for shortening URLs
     try {
       // Find the total count of documents in the database
       const count = await URL.countDocuments({});
@@ -74,7 +67,7 @@ app.post('/api/shorturl', async function (req, res) {
       const urlCode = count + 1;
       
       // Check if it's already in the database
-      let findOne = await URL.findOne({ original_url: originalURL });
+      let findOne = await URL.findOne({ original_url: url });
       if (findOne) {
         res.json({
           original_url: findOne.original_url,
@@ -83,7 +76,7 @@ app.post('/api/shorturl', async function (req, res) {
       } else {
         // If it's not exist yet then create a new one and respond with the result
         findOne = new URL({
-          original_url: originalURL,
+          original_url: url,
           short_url: urlCode.toString() // Convert the number to a string
         });
         await findOne.save();
@@ -96,10 +89,11 @@ app.post('/api/shorturl', async function (req, res) {
       console.error(err);
       res.status(500).json('Server error...');
     }
-  });
+  }
 });
 
-// Route for redirecting to the original URL
+// The rest of your code...
+
 app.get('/api/shorturl/:short_url', async function (req, res) {
   try {
     const urlParams = await URL.findOne({ short_url: req.params.short_url });
