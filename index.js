@@ -2,6 +2,7 @@
 
 const express = require('express');
 const mongoose = require('mongoose');
+const shortId = require('shortid');
 const bodyParser = require('body-parser');
 const validUrl = require('valid-url');
 const dns = require('dns'); // Import the DNS module
@@ -49,8 +50,7 @@ function isValidURL(url) {
   return urlRegex.test(url) || validUrl.isWebUri(url);
 }
 
-// Your other route handlers and middleware can go here...
-
+// Route for posting a URL
 app.post('/api/shorturl', async function (req, res) {
   const originalURL = req.body.url;
 
@@ -66,7 +66,6 @@ app.post('/api/shorturl', async function (req, res) {
       return res.json({ error: 'DNS lookup failed' });
     }
 
-    // Rest of your code for shortening URLs
     try {
       // Find the total count of documents in the database
       const count = await URL.countDocuments({});
@@ -100,8 +99,7 @@ app.post('/api/shorturl', async function (req, res) {
   });
 });
 
-// The rest of your code...
-
+// Route for redirecting to the original URL
 app.get('/api/shorturl/:short_url', async function (req, res) {
   try {
     const urlParams = await URL.findOne({ short_url: req.params.short_url });
