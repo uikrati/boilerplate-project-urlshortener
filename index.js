@@ -42,13 +42,23 @@ const urlSchema = new Schema({
 });
 const URL = mongoose.model("URL", urlSchema);
 
+// Function to validate URLs
+function isValidURL(url) {
+  // Use a regex pattern to check for a valid URL format
+  const urlPattern = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i;
+  return urlPattern.test(url);
+}
+
+// Your other route handlers and middleware can go here...
+
 app.post('/api/shorturl', async function (req, res) {
   const url = req.body.url;
 
   // Check if the url is valid or not
-  if (!validUrl.isWebUri(url)) {
-    return res.status(400).json({ error: 'invalid url' });
+  if (!isValidURL(url)) {
+    return res.status(400).json({ error: 'Invalid URL' });
   } else {
+    // Rest of your code for shortening URLs
     try {
       // Find the total count of documents in the database
       const count = await URL.countDocuments({});
@@ -81,6 +91,8 @@ app.post('/api/shorturl', async function (req, res) {
     }
   }
 });
+
+// The rest of your code...
 
 
 app.get('/api/shorturl/:short_url', async function (req, res) {
