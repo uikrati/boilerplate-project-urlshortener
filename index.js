@@ -50,15 +50,31 @@ function isValidURL(url) {
 }
 
 // Your other route handlers and middleware can go here...
+// Function to validate URLs
+function isValidURL(url) {
+  // Check if the URL follows the format http://www.example.com
+  const urlRegex = /^http:\/\/www\.example\.com$/;
+  return urlRegex.test(url) || validUrl.isWebUri(url);
+}
+
+// Your other route handlers and middleware can go here...
 
 app.post('/api/shorturl', async function (req, res) {
   const url = req.body.url;
 
-  // Check if the url is valid or not
-  if (!isValidURL(url)) {
+  // Check if the URL starts with either http:// or https://
+  const httpRegex = /^(http|https)(:\/\/)/;
+
+  if (!httpRegex.test(url)) {
     return res.status(400).json({ error: 'Invalid URL' });
   } else {
-    // Rest of your code for shortening URLs
+    // Use the dns.lookup function to verify the URL
+    dns.lookup(url, async (err, address) => {
+      if (err) {
+        return res.status(400).json({ error: 'DNS lookup failed' });
+      }
+    })
+  
     try {
       // Find the total count of documents in the database
       const count = await URL.countDocuments({});
