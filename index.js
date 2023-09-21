@@ -2,9 +2,9 @@
 
 const express = require('express');
 const mongoose = require('mongoose');
+const shortId = require('shortid');
 const bodyParser = require('body-parser');
 const validUrl = require('valid-url');
-const dns = require('dns'); // Import the DNS module
 require('dotenv').config();
 const cors = require('cors');
 const app = express();
@@ -15,7 +15,7 @@ const port = process.env.PORT || 3000;
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
 app.use(express.json());
-const uri = process.env.MONGO_URI;
+const uri = process.env.MONGO_URI; 
 
 mongoose.connect(uri, {
   useNewUrlParser: true,
@@ -29,6 +29,11 @@ connection.once('open', () => {
   console.log("MongoDB database connection established successfully");
 });
 
+app.use('/public', express.static(process.cwd() + '/public'));
+app.get('/', function (req, res) {
+  res.sendFile(process.cwd() + '/views/index.html');
+});
+
 // Create Schema
 const Schema = mongoose.Schema;
 const urlSchema = new Schema({
@@ -39,60 +44,55 @@ const URL = mongoose.model("URL", urlSchema);
 
 // Function to validate URLs
 function isValidURL(url) {
-  // Check if the URL starts with either http:// or https://
-  const httpRegex = /^(http|https)(:\/\/)/;
-  return httpRegex.test(url) || validUrl.isWebUri(url);
+  // Check if the URL follows the format http://www.example.com
+  const urlRegex = /^http:\/\/www\.example\.com$/;
+  return urlRegex.test(url) || validUrl.isWebUri(url);
 }
+
+// Your other route handlers and middleware can go here...
 
 app.post('/api/shorturl', async function (req, res) {
   const url = req.body.url;
 
-  // Check if the URL starts with either http:// or https://
-  const httpRegex = /^(http|https)(:\/\/)/;
-
-  if (!httpRegex.test(url)) {
+  // Check if the url is valid or not
+  if (!isValidURL(url)) {
     return res.status(400).json({ error: 'Invalid URL' });
   } else {
-    // Use the dns.lookup function to verify the URL
-    dns.lookup(url, async (err, address) => {
-      if (err) {
-        return res.status(400).json({ error: 'DNS lookup failed' });
+    // Rest of your code for shortening URLs
+    try {
+      // Find the total count of documents in the database
+      const count = await URL.countDocuments({});
+      
+      // Use the count as the short_url (sequential number)
+      const urlCode = count + 1;
+      
+      // Check if it's already in the database
+      let findOne = await URL.findOne({ original_url: url });
+      if (findOne) {
+        res.json({
+          original_url: findOne.original_url,
+          short_url: findOne.short_url
+        });
+      } else {
+        // If it's not exist yet then create a new one and respond with the result
+        findOne = new URL({
+          original_url: url,
+          short_url: urlCode.toString() // Convert the number to a string
+        });
+        await findOne.save();
+        res.json({
+          original_url: findOne.original_url,
+          short_url: findOne.short_url
+        });
       }
-
-      // Rest of your code for shortening URLs
-      try {
-        // Find the total count of documents in the database
-        const count = await URL.countDocuments({});
-        
-        // Use the count as the short_url (sequential number)
-        const urlCode = count + 1;
-        
-        // Check if it's already in the database
-        let findOne = await URL.findOne({ original_url: url });
-        if (findOne) {
-          res.json({
-            original_url: findOne.original_url,
-            short_url: findOne.short_url
-          });
-        } else {
-          // If it's not exist yet then create a new one and respond with the result
-          findOne = new URL({
-            original_url: url,
-            short_url: urlCode.toString() // Convert the number to a string
-          });
-          await findOne.save();
-          res.json({
-            original_url: findOne.original_url,
-            short_url: findOne.short_url
-          });
-        }
-      } catch (err) {
-        console.error(err);
-        res.status(500).json('Server error...');
-      }
-    });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json('Server error...');
+    }
   }
 });
+
+// The rest of your code...
 
 app.get('/api/shorturl/:short_url', async function (req, res) {
   try {
@@ -103,7 +103,7 @@ app.get('/api/shorturl/:short_url', async function (req, res) {
       return res.status(404).json({ error: 'No URL found' });
     }
   } catch (err) {
-    console.error(err);
+    console.log(err);
     res.status(500).json('Server error');
   }
 });
