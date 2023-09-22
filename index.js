@@ -8,6 +8,8 @@ const validUrl = require('valid-url');
 require('dotenv').config();
 const cors = require('cors');
 const app = express();
+const dns=require('dns');
+const urlparser = require('url')
 
 // Basic Configuration 
 const port = process.env.PORT || 3000;
@@ -42,12 +44,7 @@ const urlSchema = new Schema({
 });
 const URL = mongoose.model("URL", urlSchema);
 
-// Function to validate URLs
-function isValidURL(url) {
-  // Check if the URL follows the format http://www.example.com
-  const urlRegex = /^http:\/\/www\.example\.com$/;
-  return urlRegex.test(url) || validUrl.isWebUri(url);
-}
+
 
 // Your other route handlers and middleware can go here...
 
@@ -55,9 +52,12 @@ app.post('/api/shorturl', async function (req, res) {
   const url = req.body.url;
 
   // Check if the url is valid or not
-  if (!isValidURL(url)) {
-    return res.status(400).json({ error: 'Invalid URL' });
-  } else {
+  const dnslookup = dns.lookup(urlparser.parse(url).hostname, async (err, address) => {
+    if (!address){
+      res.json({error: "Invalid URL"})
+    }
+  
+  else {
     // Rest of your code for shortening URLs
     try {
       // Find the total count of documents in the database
@@ -89,7 +89,7 @@ app.post('/api/shorturl', async function (req, res) {
       console.error(err);
       res.status(500).json('Server error...');
     }
-  }
+  }})
 });
 
 // The rest of your code...
